@@ -1,9 +1,8 @@
 <template>
   <div class="container">
     <div class="flex content-center flex-wrap bg-white h-screen w-screen">
-      <div class="w-1/4 p-2 h-100" v-longpress="() => send(button.name)" v-touch:start="() => press(button.name, true)"
-           v-touch:end="() => press(button.name, false)"
-           v-on:mouseup="press(button.name, false)" v-on:mouseleave="press(button.name, false)"
+      <div class="w-1/4 p-2 h-100" v-longpress="() => longPress(button)" v-touch:start="() => press(button)"
+           v-touch:end="() => release(button)"
            v-for="button in buttons" :key="button.name">
         <img draggable="false" v-if="!button.pressed"
              class="pointer-events-none w-full mx-auto select-none"
@@ -44,11 +43,12 @@ export default {
   data() {
     return {
       buttons: [
-        {name: "left", pressed: false},
-        {name: "back", pressed: false},
-        {name: "start", pressed: false},
-        {name: "right", pressed: false},
+        {name: "left", pressed: false, longPressing: false},
+        {name: "back", pressed: false, longPressing: false},
+        {name: "start", pressed: false, longPressing: false},
+        {name: "right", pressed: false, longPressing: false},
       ],
+      queue: [],
       fullscreen: false,
       player: 1
     };
@@ -56,6 +56,7 @@ export default {
 
   mounted() {
     window.addEventListener("fullscreenchange", this.onFullscreen, {passive: true});
+    this.executeQueue()
   },
 
   methods: {
@@ -63,7 +64,6 @@ export default {
       this.fullscreen = document.fullscreenElement != null;
     },
     toggleFullscreen() {
-      navigator.vibrate(1000)
       if (this.fullscreen) {
         document.exitFullscreen();
       } else {
@@ -79,20 +79,41 @@ export default {
       }
     },
 
-    press(name, pressed) {
-      navigator.vibrate([500])
-      this.buttons.forEach(button => {
-        if (button.name === name) {
-          button.pressed = pressed;
-        }
-      });
-      if (pressed) {
-        this.send(name)
+    async executeQueue() {
+      const elem = this.queue[0]
+      if (elem && (new Date() - elem.date) < 300) {
+        await this.$axios.get(window.location.origin + "/api/press/" + elem.player + "/" + elem.button.name, { progress: false })
+      }
+      this.queue.shift()
+      setTimeout(this.executeQueue, 10);
+    },
+
+    longPress(button) {
+      navigator.vibrate(70)
+      button.longPressing = true
+      this.$axios.get(window.location.origin + "/api/longpress/" + this.player + "/" + button.name + "/down", { progress: false })
+    },
+
+    async press(button) {
+      navigator.vibrate(10)
+      button.pressed = true
+      setTimeout(this.pressTimer, 40, button)
+    },
+
+    pressTimer(button) {
+      if(button.name==="right" && this.buttons[0].pressed) {
+        this.$axios.get(window.location.origin + "/api/doublepress/" + this.player, { progress: false })
+      } else if (!(button.name==="left" && this.buttons[3].pressed)) {
+        this.queue.push({button: button, player: this.player, date: new Date()})
       }
     },
 
-    send(name) {
-      this.$axios.get(window.document.location.origin + "/api/" + this.player + "/" + name, { progress: false })
+    release(button) {
+      button.pressed = false
+      if (button.longPressing) {
+        button.longPressing = false
+        this.$axios.get(window.location.origin + "/api/longpress/" + this.player + "/" + button.name + "/up", { progress: false })
+      }
     },
 
     getImgUrl(name, pressed) {

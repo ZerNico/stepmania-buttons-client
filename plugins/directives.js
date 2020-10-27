@@ -19,10 +19,9 @@ Vue.directive('longpress', {
 
     // Define variable
     let pressTimer = null
-    let pressInterval = null
 
-    // Define function handlers
-    // Create timeout
+    // Define funtion handlers
+    // Create timeout ( run function after 1s )
     let start = (e) => {
 
       if (e.type === 'click' && e.button !== 0) {
@@ -31,14 +30,9 @@ Vue.directive('longpress', {
 
       if (pressTimer === null) {
         pressTimer = setTimeout(() => {
-          if (5000 && 5000 > 0) {
-            pressInterval = setInterval(() => {
-              handler(false)
-            }, 200)
-          }
           // Run function
           handler()
-        }, 700)
+        }, 300)
       }
     }
 
@@ -49,10 +43,6 @@ Vue.directive('longpress', {
         clearTimeout(pressTimer)
         pressTimer = null
       }
-      if (pressInterval) {
-        clearInterval(pressInterval)
-        pressInterval = null
-      }
     }
     // Run Function
     const handler = (e) => {
@@ -62,7 +52,7 @@ Vue.directive('longpress', {
     // Add Event listeners
     el.addEventListener("mousedown", start);
     el.addEventListener("touchstart", start);
-    // Cancel timeouts
+    // Cancel timeouts if this events happen
     el.addEventListener("click", cancel);
     el.addEventListener("mouseout", cancel);
     el.addEventListener("touchend", cancel);
