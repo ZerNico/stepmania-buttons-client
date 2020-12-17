@@ -1,14 +1,12 @@
 <template>
   <div class="container">
-    <div class="flex content-center flex-wrap bg-white h-screen w-screen">
+    <div class="flex content-center flex-wrap h-screen w-screen">
       <div class="w-1/4 p-2 h-100" v-touch:start="() => press(button)"
            v-touch:end="() => release(button)"
            v-for="button in buttons" :key="button.name">
-        <img draggable="false" v-if="!button.pressed"
+        <img draggable="false"
              class="pointer-events-none w-full mx-auto select-none"
-             :src="getImgUrl(button.name, false, 'NicoButtons')"/>
-        <img draggable="false" v-else class="pointer-events-none w-full mx-auto select-none"
-             :src="getImgUrl(button.name, true, 'NicoButtons')"/>
+             :src="getImgUrl(button.name, button.pressed, 'NicoButtons')"/>
       </div>
     </div>
   </div>
